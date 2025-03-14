@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -6,40 +6,52 @@ import {
   getPaginationRowModel,
   flexRender,
 } from "@tanstack/react-table";
-
-const data = [
-  { name: "Sharjeel Ahmad", email: "sharjeelahmad@gmail.com", designation: "Developer" },
-  { name: "Ali Khan", email: "alikhan@gmail.com", designation: "Designer" },
-  { name: "Ayesha Fatima", email: "ayeshafatima@gmail.com", designation: "Project Manager" },
-  { name: "Usman Tariq", email: "usmantariq@gmail.com", designation: "QA Engineer" },
-  { name: "Sara Ahmed", email: "saraahmed@gmail.com", designation: "HR Manager" },
-  { name: "Bilal Khan", email: "bilalkhan@gmail.com", designation: "Data Analyst" },
-  { name: "Zain Malik", email: "zainmalik@gmail.com", designation: "Backend Developer" },
-  { name: "Farah Javed", email: "farahjaved@gmail.com", designation: "UI/UX Designer" },
-  { name: "Hamza Shahid", email: "hamzashahid@gmail.com", designation: "Software Engineer" },
-  { name: "Noor Fatima", email: "noorfatima@gmail.com", designation: "Marketing Manager" },
-  { name: "Ahmed Raza", email: "ahmedraza@gmail.com", designation: "System Admin" },
-  { name: "Faisal Mehmood", email: "faisalmehmood@gmail.com", designation: "Network Engineer" },
-];
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../components/ui/table";
 
 const columns = [
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "designation",
-    header: "Designation",
-  },
+  { accessorKey: "id", header: "ID" },
+  { accessorKey: "uid", header: "UID" },
+  { accessorKey: "valid_us_ssn", header: "Valid SSN" },
+  { accessorKey: "invalid_us_ssn", header: "Invalid SSN" },
 ];
 
 const Home = () => {
-  
+  const [data, setData] = useState(() => {
+    const savedData = localStorage.getItem("apiData");
+    return savedData ? JSON.parse(savedData) : [];
+  });
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchData = () => {
+    setLoading(true);
+    setError(null);
+    const myHeaders = new Headers();
+    myHeaders.append("x-apihub-key", "hHfycXQGyez3vn7ADEPmpx4PG6o8kV2ze6QcVjce-jelEHOd1j");
+    myHeaders.append("x-apihub-host", "False-Data-API.allthingsdev.co");
+    myHeaders.append("x-apihub-endpoint", "98a24028-ad79-425d-acde-492d6fd7220f");
+
+    fetch("https://False-Data-API.proxy-production.allthingsdev.co/api/id_number/random_id_number", {
+      method: "GET",
+      headers: myHeaders,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          
+        }
+        return response.json();
+      })
+      .then((result) => {
+        const newData = [...data, result];
+        setData(newData);
+        localStorage.setItem("apiData", JSON.stringify(newData));
+      })
+      .catch((error) => setError(error.message))
+      .finally(() => setLoading(false));
+  };
 
   const table = useReactTable({
     data,
@@ -47,65 +59,51 @@ const Home = () => {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      
-      pagination,
-    },
+    state: { pagination },
     onPaginationChange: setPagination,
   });
 
   return (
-    <div className="p-4">
-      <table className="w-full border border-gray-300">
-        <thead className="bg-gray-200">
+    <Card className="p-6 w-full max-w-4xl mx-auto mt-6">
+      {error && <div className="text-red-500">Error: {error}</div>}
+      <Button onClick={fetchData} disabled={loading} className="mb-4">
+        {loading ? "Fetching..." : "Fetch Data"}
+      </Button>
+      <Table>
+        <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-4 py-2 text-left cursor-pointer"
-                  onClick={header.column.getToggleSortingHandler()}
-                >
+                <TableHead key={header.id} onClick={header.column.getToggleSortingHandler()}>
                   {flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getIsSorted() === "asc" ? " 🔼" : header.column.getIsSorted() === "desc" ? " 🔽" : ""}
-                </th>
+                </TableHead>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </thead>
-        <tbody className="divide-y">
+        </TableHeader>
+        <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b">
+            <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-2">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
+                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       <div className="flex justify-between mt-4">
-        <button
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
+        <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
           Previous
-        </button>
+        </Button>
         <span>
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
-        <button
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
+        <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
           Next
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 
